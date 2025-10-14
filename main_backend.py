@@ -7,7 +7,7 @@ from agents.agent_fetcher import (
     aggressive_growth_metrics,
     technical_trader_metrics,
 )
-from agents.agent_prompts import get_all_analyses
+from agents.agent_prompts import get_all_analyses, get_judge_analysis
 
 app = FastAPI(title="Multi-Agent Financial Analysis System")
 
@@ -33,10 +33,14 @@ async def analyze_ticker(ticker: str):
         }
         # Then get agent analyses
         analyses = get_all_analyses(metrics)
+
+        # Finally, get the judge's verdict
+        judge_analysis = get_judge_analysis(analyses)
         
         return {
             "ticker": ticker,
-            "agents": analyses
+            "agents": analyses,
+            "judge": judge_analysis
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

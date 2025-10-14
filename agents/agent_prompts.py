@@ -78,6 +78,71 @@ Given metrics for a stock, provide:
 
 Keep responses clear and focused on technical analysis."""
 
+JUDGE_PROMPT = """You are the Judge in a financial analysis forum. You have received recommendations from three expert advisors with different philosophies: a Cautious Value Investor, an Aggressive Growth Investor, and a Technical Trader.
+
+Your role is to:
+1.  **Synthesize their views**: Briefly summarize the key points and conflicts in their analyses.
+2.  **Weigh the perspectives**: Consider the current market context and the nature of the stock to decide which perspective is most relevant. For example, in a stable market, value might be more important, while in a tech boom, growth might be key.
+3.  **Make a final decision**: Provide a single, clear, and actionable recommendation for both a short-term (1-6 months) and long-term (1-3 years) horizon.
+4.  **Justify your verdict**: Explain your reasoning, referencing the advisors' inputs and your own judgment.
+
+You must be decisive. Do not simply repeat the other agents' analyses. Provide a new, synthesized perspective that offers a final verdict."""
+
+def get_judge_analysis(analyses: Dict[str, Any]) -> Dict[str, Any]:
+    """Get the final verdict from the Judge agent."""
+    
+    # Construct the message for the LLM
+    user_message = f"""Here are the analyses from the three expert advisors:
+
+### Cautious Value Investor Analysis:
+{analyses.get("Cautious Value", {}).get("analysis", "No analysis provided.")}
+
+### Aggressive Growth Investor Analysis:
+{analyses.get("Aggressive Growth", {}).get("analysis", "No analysis provided.")}
+
+### Technical Trader Analysis:
+{analyses.get("Technical Trader", {}).get("analysis", "No analysis provided.")}
+
+Based on these inputs, please provide your final verdict as the Judge."""
+
+    # Call OpenRouter API
+    try:
+        payload = {
+            "model": os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet"),
+            "messages": [
+                {"role": "system", "content": JUDGE_PROMPT},
+                {"role": "user", "content": user_message}
+            ],
+            "temperature": 0.6, # Lower temperature for more decisive output
+            "max_tokens": 1500
+        }
+        print("Calling OpenRouter API for Judge...")  # Debug log
+        response = requests.post(
+            url=OPENROUTER_API_URL,
+            headers=HEADERS,
+            data=json.dumps(payload),
+            timeout=45
+        )
+        if response.status_code == 200:
+            result = response.json()
+            analysis = result["choices"][0]["message"]["content"]
+            return {
+                "type": "Judge",
+                "analysis": analysis,
+            }
+        else:
+            error_detail = f"Status: {response.status_code}, Message: {response.text}"
+            print(f"API Error for Judge: {error_detail}")  # Debug log
+            return {
+                "type": "Judge",
+                "error": f"API Error: {error_detail}",
+            }
+    except Exception as e:
+        return {
+            "type": "Judge",
+            "error": f"Failed to get analysis: {str(e)}",
+        }
+
 def get_agent_analysis(metrics: Dict[str, Any], agent_type: str) -> Dict[str, Any]:
     """Get analysis and recommendations from a specific agent type."""
     

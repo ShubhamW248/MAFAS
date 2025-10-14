@@ -21,11 +21,27 @@ if st.button("Analyze"):
         response = requests.get(f"http://localhost:8000/analyze/{ticker}")
         if response.status_code == 200:
             data = response.json()
+
+            # Display the Judge's final verdict first
+            if "judge" in data and data["judge"]:
+                st.subheader("🏆 Final Verdict from the Judge")
+                if "error" in data["judge"]:
+                    st.error(f"Judge Analysis Error: {data['judge']['error']}")
+                else:
+                    st.markdown(data["judge"]["analysis"])
+                st.write("---_"*10)  # A more prominent separator
             
             # Display analysis from each agent
+            st.subheader("Individual Agent Analyses")
             for agent_name, agent_data in data["agents"].items():
-                st.subheader(f"🤖 {agent_name}")
+                st.markdown(f"**🤖 {agent_name}**")
                 
+                # Show the agent's analysis
+                if "error" in agent_data:
+                    st.error(f"Analysis Error: {agent_data['error']}")
+                else:
+                    st.markdown(agent_data["analysis"])
+
                 # Show raw metrics in an expander
                 with st.expander("View Raw Metrics"):
                     for metric, value in agent_data["raw_metrics"].items():
@@ -33,12 +49,6 @@ if st.button("Analyze"):
                             st.write(f"{metric}: {value:.2f}")
                         else:
                             st.write(f"{metric}: {value}")
-                
-                # Show the agent's analysis
-                if "error" in agent_data:
-                    st.error(f"Analysis Error: {agent_data['error']}")
-                else:
-                    st.markdown(agent_data["analysis"])
                 
                 st.write("---")  # Add a separator between agents
         else:
