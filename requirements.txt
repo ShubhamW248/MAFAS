@@ -1,0 +1,18 @@
+fastapi
+uvicorn[standard]
+streamlit
+langraph
+openrouter
+yfinance
+alpha_vantage
+newsapi-python
+vaderSentiment
+pandas
+numpy
+python-dotenv
+requests
+aiohttp
+
+# Dev / testing
+pytest
+httpx
