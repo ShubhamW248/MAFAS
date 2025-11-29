@@ -31,8 +31,8 @@ async def analyze_ticker(ticker: str):
             "Aggressive Growth": aggressive_growth_metrics(ticker),
             "Technical Trader": technical_trader_metrics(ticker),
         }
-        # Then get agent analyses
-        analyses = get_all_analyses(metrics)
+        # Then get agent analyses with news context
+        analyses = get_all_analyses(metrics, ticker)
 
         # Finally, get the judge's verdict
         judge_analysis = get_judge_analysis(analyses)

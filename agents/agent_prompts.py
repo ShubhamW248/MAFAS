@@ -8,23 +8,20 @@ Each agent has a distinct investment philosophy and analytical approach:
 import os
 from typing import Dict, Any
 import json
-import requests
+import time
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-if not OPENROUTER_API_KEY:
-    raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables")
 
-# OpenRouter API configuration
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-HEADERS = {
-    "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-    "HTTP-Referer": "http://localhost:8501",
-    "X-Title": "MAFAS"
-}
+# Configure Google Generative AI
+genai.configure(api_key=GEMINI_API_KEY)
+MODEL = "gemini-2.0-flash"
 
 # Agent System Prompts
 CAUTIOUS_VALUE_PROMPT = """You are a conservative value investor in the style of Benjamin Graham. Your analysis focuses on:
@@ -37,12 +34,11 @@ CAUTIOUS_VALUE_PROMPT = """You are a conservative value investor in the style of
 You examine both quantitative metrics and qualitative factors. You're skeptical of hype and prefer proven business models.
 
 Given metrics for a stock, provide:
-1. Short-term outlook (6-12 months)
-2. Long-term outlook (3-5 years)
-3. Clear buy/hold/sell recommendation for each timeframe
-4. Detailed justification based on the metrics and your investment philosophy
+1. Short-term outlook (6-12 months): CLEAR signal - BUY, HOLD, or SELL
+2. Long-term outlook (3-5 years): CLEAR signal - BUY, HOLD, or SELL
+3. Brief justification (2-3 sentences max per signal)
 
-Keep responses clear and focused on value-oriented analysis."""
+BE DECISIVE. Do not give grey area answers. Choose one: BUY, HOLD, or SELL."""
 
 AGGRESSIVE_GROWTH_PROMPT = """You are an aggressive growth investor focused on innovative companies and emerging trends. Your analysis emphasizes:
 - Revenue and earnings growth rates
@@ -54,12 +50,11 @@ AGGRESSIVE_GROWTH_PROMPT = """You are an aggressive growth investor focused on i
 You look for companies that could be category leaders in 5-10 years. You can tolerate high valuations if growth justifies them.
 
 Given metrics for a stock, provide:
-1. Short-term outlook (6-12 months)
-2. Long-term outlook (3-5 years)
-3. Clear buy/hold/sell recommendation for each timeframe
-4. Detailed justification focused on growth potential and market positioning
+1. Short-term outlook (6-12 months): CLEAR signal - BUY, HOLD, or SELL
+2. Long-term outlook (3-5 years): CLEAR signal - BUY, HOLD, or SELL
+3. Brief justification (2-3 sentences max per signal)
 
-Keep responses clear and focused on growth-oriented analysis."""
+BE DECISIVE. Do not give grey area answers. Choose one: BUY, HOLD, or SELL."""
 
 TECHNICAL_TRADER_PROMPT = """You are a technical analysis trader focused purely on price action and technical indicators. Your analysis centers on:
 - Trend analysis using moving averages
@@ -71,22 +66,100 @@ TECHNICAL_TRADER_PROMPT = """You are a technical analysis trader focused purely 
 You make decisions based on technical signals regardless of fundamentals. Your timeframes are shorter than fundamental analysts.
 
 Given metrics for a stock, provide:
-1. Short-term outlook (1-3 months)
-2. Medium-term outlook (6-12 months)
-3. Clear buy/hold/sell recommendation for each timeframe
-4. Detailed justification based on technical indicators and price action
+1. Short-term outlook (1-3 months): CLEAR signal - BUY, HOLD, or SELL
+2. Medium-term outlook (6-12 months): CLEAR signal - BUY, HOLD, or SELL
+3. Brief justification (2-3 sentences max per signal)
 
-Keep responses clear and focused on technical analysis."""
+BE DECISIVE. Do not give grey area answers. Choose one: BUY, HOLD, or SELL."""
 
 JUDGE_PROMPT = """You are the Judge in a financial analysis forum. You have received recommendations from three expert advisors with different philosophies: a Cautious Value Investor, an Aggressive Growth Investor, and a Technical Trader.
 
 Your role is to:
-1.  **Synthesize their views**: Briefly summarize the key points and conflicts in their analyses.
-2.  **Weigh the perspectives**: Consider the current market context and the nature of the stock to decide which perspective is most relevant. For example, in a stable market, value might be more important, while in a tech boom, growth might be key.
-3.  **Make a final decision**: Provide a single, clear, and actionable recommendation for both a short-term (1-6 months) and long-term (1-3 years) horizon.
-4.  **Justify your verdict**: Explain your reasoning, referencing the advisors' inputs and your own judgment.
+1. **Synthesize their views**: Briefly note the signals and reasoning from each advisor.
+2. **Weigh the perspectives**: Consider which perspective is most relevant for the current market.
+3. **Make a FINAL DECISION**: Provide ONE clear, decisive recommendation for BOTH short-term (1-6 months) and long-term (1-3 years).
+   - Choose ONLY: BUY, HOLD, or SELL
+   - Do NOT give grey area answers
+4. **Justify your verdict**: 2-3 sentences explaining your choice, referencing the advisors' inputs.
 
-You must be decisive. Do not simply repeat the other agents' analyses. Provide a new, synthesized perspective that offers a final verdict."""
+OUTPUT FORMAT:
+- Short-Term (1-6 months): [BUY/HOLD/SELL]
+- Long-Term (1-3 years): [BUY/HOLD/SELL]
+- Justification: [2-3 sentences]
+
+YOU MUST BE DECISIVE. Pick a signal and stick with it."""
+
+NEWS_CONTEXT_PROMPT = """You are a financial news analyst. Given a stock ticker, provide:
+1. Recent market trends affecting this stock
+2. Industry/sector developments
+3. Company-specific news and catalysts
+4. Macroeconomic factors
+5. Competitive landscape changes
+
+Provide a concise but comprehensive market context that would be useful for investment decisions."""
+
+def get_news_context(ticker: str) -> Dict[str, Any]:
+    """Get market context and news analysis from Gemini about a stock."""
+    
+    user_message = f"""Provide current market context and recent developments for {ticker}:
+    
+1. What are the key recent news items about {ticker}?
+2. What are the major trends in the {ticker} industry/sector?
+3. What macroeconomic factors are currently affecting {ticker}?
+4. What competitive dynamics should investors know about?
+5. Are there any upcoming catalysts or events for {ticker}?
+
+Base your response on your training data knowledge up to April 2024."""
+
+    max_retries = 3
+    retry_delay = 1
+    
+    for attempt in range(max_retries):
+        try:
+            client = genai.GenerativeModel(MODEL)
+            print(f"Getting news context for {ticker}... (attempt {attempt + 1})")
+            response = client.generate_content(
+                NEWS_CONTEXT_PROMPT + "\n\n" + user_message,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.5,
+                    max_output_tokens=1000
+                ),
+                stream=False
+            )
+            if response.text:
+                return {
+                    "ticker": ticker,
+                    "news_context": response.text,
+                    "status": "success"
+                }
+            else:
+                return {
+                    "ticker": ticker,
+                    "news_context": "No context available",
+                    "status": "empty_response"
+                }
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Error getting news context: {error_msg}")
+            
+            if "429" in error_msg or "Resource exhausted" in error_msg:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (attempt + 1)
+                    print(f"Rate limited. Waiting {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+            
+            return {
+                "ticker": ticker,
+                "news_context": f"Error: {error_msg}",
+                "status": "error"
+            }
+    
+    return {
+        "ticker": ticker,
+        "news_context": "Max retries exceeded",
+        "status": "error"
+    }
 
 def get_judge_analysis(analyses: Dict[str, Any]) -> Dict[str, Any]:
     """Get the final verdict from the Judge agent."""
@@ -105,43 +178,53 @@ def get_judge_analysis(analyses: Dict[str, Any]) -> Dict[str, Any]:
 
 Based on these inputs, please provide your final verdict as the Judge."""
 
-    # Call OpenRouter API
-    try:
-        payload = {
-            "model": os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet"),
-            "messages": [
-                {"role": "system", "content": JUDGE_PROMPT},
-                {"role": "user", "content": user_message}
-            ],
-            "temperature": 0.6, # Lower temperature for more decisive output
-            "max_tokens": 1500
-        }
-        print("Calling OpenRouter API for Judge...")  # Debug log
-        response = requests.post(
-            url=OPENROUTER_API_URL,
-            headers=HEADERS,
-            data=json.dumps(payload),
-            timeout=45
-        )
-        if response.status_code == 200:
-            result = response.json()
-            analysis = result["choices"][0]["message"]["content"]
+    # Call Gemini API with retry logic
+    max_retries = 5
+    retry_delay = 5  # Longer base delay for judge
+    
+    for attempt in range(max_retries):
+        try:
+            client = genai.GenerativeModel(MODEL)
+            print(f"Calling Gemini API for Judge... (attempt {attempt + 1}/{max_retries})")  # Debug log
+            response = client.generate_content(
+                JUDGE_PROMPT + "\n\n" + user_message,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.6,
+                    max_output_tokens=1500
+                ),
+                stream=False
+            )
+            if response.text:
+                return {
+                    "type": "Judge",
+                    "analysis": response.text,
+                }
+            else:
+                return {
+                    "type": "Judge",
+                    "error": "Empty response from Gemini API",
+                }
+        except Exception as e:
+            error_msg = str(e)
+            print(f"API Error for Judge: {error_msg}")
+            
+            # Check if it's a rate limit error
+            if "429" in error_msg or "Resource exhausted" in error_msg:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (attempt + 2)
+                    print(f"Rate limited. Waiting {wait_time} seconds before retry...")
+                    time.sleep(wait_time)
+                    continue
+            
             return {
                 "type": "Judge",
-                "analysis": analysis,
+                "error": f"Failed to get analysis: {error_msg}",
             }
-        else:
-            error_detail = f"Status: {response.status_code}, Message: {response.text}"
-            print(f"API Error for Judge: {error_detail}")  # Debug log
-            return {
-                "type": "Judge",
-                "error": f"API Error: {error_detail}",
-            }
-    except Exception as e:
-        return {
-            "type": "Judge",
-            "error": f"Failed to get analysis: {str(e)}",
-        }
+    
+    return {
+        "type": "Judge",
+        "error": "Max retries exceeded due to rate limiting",
+    }
 
 def get_agent_analysis(metrics: Dict[str, Any], agent_type: str) -> Dict[str, Any]:
     """Get analysis and recommendations from a specific agent type."""
@@ -167,56 +250,88 @@ Additional context (all metrics):
 
 Provide your analysis and recommendations following your investment philosophy."""
 
-    # Call OpenRouter API
-    try:
-        payload = {
-            "model": os.getenv("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet"),
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            "temperature": 0.7,
-            "max_tokens": 1500
-        }
-        print(f"Calling OpenRouter API for {agent_type}...")  # Debug log
-        response = requests.post(
-            url=OPENROUTER_API_URL,
-            headers=HEADERS,
-            data=json.dumps(payload),
-            timeout=30
-        )
-        if response.status_code == 200:
-            result = response.json()
-            analysis = result["choices"][0]["message"]["content"]
+    # Call Gemini API with retry logic
+    max_retries = 3
+    retry_delay = 2
+    
+    for attempt in range(max_retries):
+        try:
+            client = genai.GenerativeModel(MODEL)
+            print(f"Calling Gemini API for {agent_type}... (attempt {attempt + 1})")  # Debug log
+            response = client.generate_content(
+                system_prompt + "\n\n" + user_message,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.7,
+                    max_output_tokens=1500
+                ),
+                stream=False
+            )
+            if response.text:
+                return {
+                    "type": agent_type,
+                    "analysis": response.text,
+                    "raw_metrics": metrics_to_highlight
+                }
+            else:
+                return {
+                    "type": agent_type,
+                    "error": "Empty response from Gemini API",
+                    "raw_metrics": metrics_to_highlight
+                }
+        except Exception as e:
+            error_msg = str(e)
+            print(f"API Error for {agent_type}: {error_msg}")
+            
+            # Check if it's a rate limit error
+            if "429" in error_msg or "Resource exhausted" in error_msg:
+                if attempt < max_retries - 1:
+                    wait_time = retry_delay * (attempt + 1)
+                    print(f"Rate limited. Waiting {wait_time} seconds before retry...")
+                    time.sleep(wait_time)
+                    continue
+            
             return {
                 "type": agent_type,
-                "analysis": analysis,
+                "error": f"Failed to get analysis: {error_msg}",
                 "raw_metrics": metrics_to_highlight
             }
-        else:
-            error_detail = f"Status: {response.status_code}"
-            try:
-                error_json = response.json()
-                error_detail += f", Message: {error_json.get('error', {}).get('message', 'No error message')}"
-            except:
-                error_detail += f", Response: {response.text[:200]}"
-            print(f"API Error for {agent_type}: {error_detail}")  # Debug log
-            return {
-                "type": agent_type,
-                "error": f"API Error: {error_detail}",
-                "raw_metrics": metrics_to_highlight
-            }
-    except Exception as e:
-        return {
-            "type": agent_type,
-            "error": f"Failed to get analysis: {str(e)}",
-            "raw_metrics": metrics_to_highlight
-        }
-
-def get_all_analyses(ticker_metrics: Dict[str, Any]) -> Dict[str, Any]:
-    """Get analyses from all three agents for a given set of ticker metrics."""
+    
     return {
-        "Cautious Value": get_agent_analysis(ticker_metrics, "Cautious Value"),
-        "Aggressive Growth": get_agent_analysis(ticker_metrics, "Aggressive Growth"),
-        "Technical Trader": get_agent_analysis(ticker_metrics, "Technical Trader")
+        "type": agent_type,
+        "error": "Max retries exceeded due to rate limiting",
+        "raw_metrics": metrics_to_highlight
     }
+
+def get_all_analyses(ticker_metrics: Dict[str, Any], ticker: str = None) -> Dict[str, Any]:
+    """Get analyses from all three agents for a given set of ticker metrics."""
+    
+    # Get news context first
+    news_context = {}
+    if ticker:
+        print(f"Fetching market context for {ticker}...")
+        news_context = get_news_context(ticker)
+        time.sleep(2)  # Brief delay before agent calls
+    
+    analyses = {
+        "news_context": news_context,
+    }
+    
+    # Get analysis from Cautious Value agent
+    print("Fetching Cautious Value analysis...")
+    analyses["Cautious Value"] = get_agent_analysis(ticker_metrics, "Cautious Value")
+    time.sleep(1)  # Delay between agents
+    
+    # Get analysis from Aggressive Growth agent
+    print("Fetching Aggressive Growth analysis...")
+    analyses["Aggressive Growth"] = get_agent_analysis(ticker_metrics, "Aggressive Growth")
+    time.sleep(1)  # Delay between agents
+    
+    # Get analysis from Technical Trader agent
+    print("Fetching Technical Trader analysis...")
+    analyses["Technical Trader"] = get_agent_analysis(ticker_metrics, "Technical Trader")
+    
+    # Add a longer delay before judge call to avoid rate limiting
+    print("Waiting 5 seconds before Judge analysis to avoid rate limit...")
+    time.sleep(5)
+    
+    return analyses

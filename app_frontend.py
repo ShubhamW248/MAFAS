@@ -31,9 +31,21 @@ if st.button("Analyze"):
                     st.markdown(data["judge"]["analysis"])
                 st.write("---_"*10)  # A more prominent separator
             
+            # Display news context if available
+            if "agents" in data and "news_context" in data["agents"]:
+                news_data = data["agents"]["news_context"]
+                if news_data and news_data.get("status") == "success":
+                    st.subheader("📰 Market Context & News Analysis")
+                    st.markdown(news_data["news_context"])
+                    st.write("---")
+            
             # Display analysis from each agent
             st.subheader("Individual Agent Analyses")
             for agent_name, agent_data in data["agents"].items():
+                # Skip news_context, only process actual agents
+                if agent_name == "news_context":
+                    continue
+                    
                 st.markdown(f"**🤖 {agent_name}**")
                 
                 # Show the agent's analysis

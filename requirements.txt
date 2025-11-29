@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 streamlit
 langraph
-openrouter
+google-generativeai
 yfinance
 alpha_vantage
 newsapi-python
