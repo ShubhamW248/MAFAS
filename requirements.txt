@@ -16,3 +16,8 @@ aiohttp
 # Dev / testing
 pytest
 httpx
+
+# Analysis and visualization
+matplotlib
+seaborn
+scikit-learn

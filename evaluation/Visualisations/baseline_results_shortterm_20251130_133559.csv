@@ -1,0 +1,46 @@
+Ticker,Snapshot_Date,Snapshot_Price,Current_Price,Evaluation_Type,Baseline_Signal,Baseline_Analysis,Ground_Truth_Signal
+AAPL,2025-08-15,232.55,272.41,shortterm,HOLD,"Recommendation: HOLD
+Justification: While Apple shows strong growth metrics and positive technical indicators like MACD and RSI nearing overbought, the mixed news environment (slightly missed earnings, global economic slowdown) and high P/E ratio suggest caution. The price is also near its 52-week high, indicating limited near-term upside potential.
+",BUY
+MSFT,2025-08-15,521.62,510.18,shortterm,BUY,"Recommendation: BUY
+Justification: Microsoft demonstrates strong fundamentals with a healthy profit margin and solid revenue/earnings growth, further supported by positive news sentiment and exceeding earnings expectations. The technical indicators are also bullish, with the price above both SMA50 and SMA200, and the MACD trending towards a buy signal, suggesting continued upward momentum despite broader market concerns.
+",HOLD
+NVDA,2025-08-15,182.01,190.17,shortterm,BUY,"Recommendation: BUY
+Justification: Nvidia exhibits strong growth metrics, positive news sentiment, and solid technical indicators, suggesting continued upward momentum. Despite a high P/E ratio, the company's robust revenue and earnings growth, coupled with a positive outlook for the AI chip market, outweigh valuation concerns in the short to medium term.
+",HOLD
+TSLA,2025-08-15,335.58,404.35,shortterm,HOLD,"Recommendation: HOLD
+Justification: While the technical indicators are somewhat positive (RSI above 50, MACD crossover), the high P/E ratio, negative earnings growth, disappointing Q2 earnings, and negative news sentiment suggest caution. The slowing EV adoption rate and macroeconomic headwinds further support a HOLD recommendation, awaiting more positive fundamental developments.
+",BUY
+JPM,2025-08-15,292.74,303.61,shortterm,BUY,"Recommendation: BUY
+Justification: JPM exhibits strong fundamentals with a healthy profit margin, solid revenue and earnings growth, and a reasonable P/E ratio. The technical indicators suggest the stock is not overbought (RSI < 50) and is trading above both its 50-day and 200-day moving averages, indicating positive momentum. Despite some industry and market headwinds, the positive news sentiment and strong Q2 earnings support a buy recommendation.
+",HOLD
+GS,2025-08-15,743.22,790.91,shortterm,BUY,"Recommendation: BUY
+Justification: Goldman Sachs exhibits strong growth metrics (revenue and earnings growth above 20% and 30% respectively) and positive news sentiment, indicating a positive outlook. While the debt-to-equity ratio is high, the recent earnings beat and expansion into private credit suggest the company is managing its debt effectively and capitalizing on growth opportunities, supported by technical indicators like RSI and MACD.
+",HOLD
+JNJ,2025-08-15,173.45,195.93,shortterm,BUY,"Recommendation: BUY
+Justification: JNJ exhibits strong fundamentals with a reasonable P/E, solid profit margins, and a healthy dividend yield. Positive news sentiment driven by successful drug trials and strategic acquisitions, combined with strong technical indicators (RSI below overbought, MACD crossover), suggest continued upward momentum. The price is currently near its 52-week high, but the positive catalysts and growth potential outweigh the risk, making it a buy.
+",BUY
+UNH,2025-08-15,269.79,321.86,shortterm,BUY,"Recommendation: BUY
+Justification: Despite some negative indicators like negative earnings growth and government scrutiny, UNH's recent Q2 earnings beat, raised full-year guidance, and expansion into virtual care, coupled with the positive news sentiment and growth in Medicare Advantage, suggest a potential for recovery and growth. The RSI is also not in overbought territory, indicating room for upward movement.
+",BUY
+AMZN,2025-08-15,230.98,234.69,shortterm,BUY,"Recommendation: BUY
+Justification: Amazon exhibits strong growth metrics, particularly in earnings and revenue, supported by positive news sentiment and expansion in key sectors like AWS. Technical indicators are also trending positively, with the price above both the 50-day and 200-day SMAs, suggesting continued upward momentum despite broader market concerns.
+",HOLD
+WMT,2025-08-15,100.61,102.48,shortterm,BUY,"Recommendation: BUY
+Justification: Walmart's recent earnings beat and raised guidance, coupled with positive news sentiment and strategic initiatives like drone delivery, suggest continued growth. While cautious value metrics like a high P/E ratio exist, the strong earnings growth and positive technical indicators (MACD crossover, price above SMAs) outweigh these concerns in the short to medium term.
+",HOLD
+XOM,2025-08-15,105.47,119.29,shortterm,HOLD,"Recommendation: HOLD
+Justification: While ExxonMobil beat earnings expectations and is investing in carbon capture, negative revenue and earnings growth, coupled with a slowing global economy and potential for further rate hikes, create uncertainty. The stock price has recently increased but is still below its 52-week high, suggesting it may be overbought in the short term.
+",BUY
+BA,2025-08-15,233.19,194.52,shortterm,HOLD,"Recommendation: HOLD
+Justification: While Boeing's stock price is below its SMA50 and SMA200, indicating potential for upward movement, the negative profit margin, high forward P/E, and ongoing supply chain issues create uncertainty. The mixed news sentiment and potential for further Fed rate hikes warrant a cautious approach, suggesting a hold position until more clarity emerges.
+",SELL
+NEE,2025-08-15,71.69,83.88,shortterm,BUY,"Recommendation: BUY
+Justification: NEE exhibits strong earnings growth (31.6%) and positive news sentiment (0.45), indicating a favorable outlook. Despite broader market concerns, the company's renewable energy focus and recent earnings beat position it for continued growth, making it a buy within the 1-6 month timeframe.
+",BUY
+PFE,2025-08-15,24.68,25.06,shortterm,BUY,"Recommendation: BUY
+Justification: The recent FDA approval of Clarity-AD and stronger-than-expected Q2 earnings are significant positive catalysts, outweighing concerns about revenue and earnings growth. The technical indicators are also showing positive momentum with the price above both the 50 and 200 day SMAs and a positive MACD signal.
+",HOLD
+COIN,2025-08-15,324.89,284.0,shortterm,BUY,"Recommendation: BUY
+Justification: COIN's RSI is deeply oversold at 26.96, suggesting a potential price reversal. Despite regulatory and macroeconomic headwinds, strong Q2 earnings driven by institutional trading and positive news sentiment indicate underlying strength. The current price is significantly below the SMA50, further suggesting a potential buying opportunity.
+",SELL

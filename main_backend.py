@@ -34,8 +34,8 @@ async def analyze_ticker(ticker: str):
         # Then get agent analyses with news context
         analyses = get_all_analyses(metrics, ticker)
 
-        # Finally, get the judge's verdict
-        judge_analysis = get_judge_analysis(analyses)
+        # Finally, get the judge's verdict (None for evaluation_type = both signals for main backend)
+        judge_analysis = get_judge_analysis(analyses, None, metrics)
         
         return {
             "ticker": ticker,
